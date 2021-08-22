@@ -89,6 +89,7 @@ public class ShutdownHook extends Thread {
     }
 
     private void sendShutdownStatus(boolean status) {
+        //delete all npc on server!
          if (status) {
              World.getInstance().getNpcs().forEach((npc) -> {
                  npc.getController().onDelete();
