@@ -68,7 +68,7 @@ public class ShutdownHook extends Thread {
         }
     }
 
-    
+
     private void sendShutdownMessage(int seconds) {
         try {
             Iterator<Player> onlinePlayers = World.getInstance().getPlayersIterator();
@@ -78,7 +78,8 @@ public class ShutdownHook extends Thread {
             while (onlinePlayers.hasNext()) {
                 Player player = onlinePlayers.next();
                 if (player != null && player.getClientConnection() != null) {
-                    PacketSendUtility.sendYellowMessageOnCenter(player, "Сервер перезапустится через " + String.valueOf(seconds));
+                    PacketSendUtility.sendYellowMessageOnCenter(player, "\uE01C Сервер будет отключен через " + seconds + " секунд! | The server will be shut down in " + seconds + " seconds! \uE01C");
+                    //paralysis for all players
                     Collection<Effect> abnormalEffects = player.getEffectController().getAbnormalEffects();
                     PacketSendUtility.broadcastPacket(player, new SM_ABNORMAL_EFFECT(player, AbnormalState.PARALYZE.getId(), abnormalEffects), true);
                 }
@@ -178,7 +179,12 @@ public class ShutdownHook extends Thread {
      * @param mode
      */
     public void doShutdown(int delay, int announceInterval, ShutdownMode mode) {
-        shutdownHook(delay, announceInterval, mode);
+            ThreadPoolManager.getInstance().schedule(new Runnable() {
+                @Override
+                public void run() {
+                    shutdownHook(delay, announceInterval, mode);
+                }
+            }, 0);
     }
 
     private static final class SingletonHolder {
