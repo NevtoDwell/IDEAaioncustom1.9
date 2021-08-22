@@ -1,0 +1,156 @@
+/*
+ * This file is part of Neon-Eleanor project
+ *
+ * This is proprietary software. See the EULA file distributed with
+ * this project for additional information regarding copyright ownership.
+ *
+ * Copyright (c) 2011-2013, Neon-Eleanor Team. All rights reserved.
+ */
+package com.ne.gs.ai2;
+
+import java.util.Collection;
+
+import com.ne.gs.controllers.observer.DialogObserver;
+import com.ne.gs.model.gameobjects.Creature;
+import com.ne.gs.model.gameobjects.Npc;
+import com.ne.gs.model.gameobjects.player.Player;
+import com.ne.gs.model.gameobjects.player.RequestResponseHandler;
+import com.ne.gs.network.aion.serverpackets.SM_QUESTION_WINDOW;
+import com.ne.gs.questEngine.QuestEngine;
+import com.ne.gs.questEngine.model.QuestEnv;
+import com.ne.gs.services.drop.DropRegistrationService;
+import com.ne.gs.skillengine.model.Effect;
+import com.ne.gs.skillengine.model.SkillTemplate;
+
+/**
+ * Here will be placed some common AI2 actions. These methods have access to AI2's owner
+ *
+ * @author ATracer
+ */
+public final class AI2Actions {
+
+    /**
+     * Despawn and delete owner
+     */
+    public static void deleteOwner(AbstractAI ai2) {
+        ai2.getOwner().getController().onDelete();
+    }
+
+    /**
+     * Target will die with all notifications using ai's owner as the last attacker
+     */
+    public static void killSilently(AbstractAI ai2, Creature target) {
+        target.getController().onDie(ai2.getOwner());
+    }
+
+    /**
+     * AI's owner will die from specified attacker
+     */
+    public static void dieSilently(AbstractAI ai2, Creature attacker) {
+        ai2.getOwner().getController().onDie(attacker);
+    }
+
+    /**
+     * Use skill or add intention to use (will be implemented later)
+     */
+    public static void useSkill(AbstractAI ai2, int skillId) {
+        ai2.getOwner().getController().useSkill(skillId);
+    }
+
+    /**
+     * Effect will be created and applied to target with 100% success
+     */
+    public static void applyEffect(AbstractAI ai2, SkillTemplate template, Creature target) {
+        Effect effect = new Effect(ai2.getOwner(), target, template, template.getLvl(), 0);
+        effect.setIsForcedEffect(true);
+        effect.initialize();
+        effect.applyEffect();
+    }
+
+    public static void targetSelf(AbstractAI ai2) {
+        ai2.getOwner().setTarget(ai2.getOwner());
+    }
+
+    public static void targetCreature(AbstractAI ai2, Creature target) {
+        ai2.getOwner().setTarget(target);
+    }
+
+    public static void handleUseItemFinish(AbstractAI ai2, Player player) {
+        ai2.getPosition().getWorldMapInstance().getInstanceHandler().handleUseItemFinish(player, (Npc) ai2.getOwner());
+    }
+
+    public static void fireNpcKillInstanceEvent(AbstractAI ai2, Player player) {
+        ai2.getPosition().getWorldMapInstance().getInstanceHandler().onDie((Npc) ai2.getOwner());
+    }
+
+    public static void registerDrop(AbstractAI ai2, Player player, Collection<Player> registeredPlayers) {
+        DropRegistrationService.getInstance().registerDrop((Npc) ai2.getOwner(), player, registeredPlayers);
+    }
+
+    public static void scheduleRespawn(NpcAI2 ai2) {
+        ai2.getOwner().getController().scheduleRespawn();
+    }
+
+    public static SelectDialogResult selectDialog(AbstractAI ai2, Player player, int questId, int dialogId) {
+        QuestEnv env = new QuestEnv(ai2.getOwner(), player, questId, dialogId);
+        boolean result = QuestEngine.getInstance().onDialog(env);
+        return new SelectDialogResult(result, env);
+    }
+
+    public static void addRequest(AbstractAI ai2, Player player, int requestId, AI2Request request, Object... requestParams) {
+        addRequest(ai2, player, requestId, ai2.getObjectId(), request, requestParams);
+    }
+
+    public static void addRequest(final AbstractAI ai2, final Player player, int requestId, int senderId, final int range,
+                                  final AI2Request request, Object... requestParams) {
+        boolean requested = player.getResponseRequester().putRequest(requestId, new RequestResponseHandler(ai2.getOwner()) {
+
+            @Override
+            public void denyRequest(Creature requester, Player responder) {
+                request.denyRequest(requester, responder);
+            }
+
+            @Override
+            public void acceptRequest(Creature requester, Player responder) {
+                request.acceptRequest(requester, responder);
+            }
+        });
+        if (requested) {
+            if (range > 0) {
+                player.getObserveController().addObserver(new DialogObserver(ai2.getOwner(), player, range) {
+
+                    @Override
+                    public void tooFar(Creature requester, Player responder) {
+                        request.denyRequest(requester, responder);
+                    }
+                });
+            }
+            player.sendPck(new SM_QUESTION_WINDOW(requestId, senderId, range, requestParams));
+        }
+    }
+
+    public static void addRequest(AbstractAI ai2, Player player, int requestId, int senderId, AI2Request request,
+                                  Object... requestParams) {
+        addRequest(ai2, player, requestId, senderId, 0, request, requestParams);
+    }
+
+    public static final class SelectDialogResult {
+
+        private final boolean success;
+        private final QuestEnv env;
+
+        private SelectDialogResult(boolean success, QuestEnv env) {
+            this.success = success;
+            this.env = env;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public QuestEnv getEnv() {
+            return env;
+        }
+
+    }
+}

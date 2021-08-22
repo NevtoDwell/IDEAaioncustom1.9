@@ -1,0 +1,128 @@
+/*
+ * This file is part of Neon-Eleanor project
+ *
+ * This is proprietary software. See the EULA file distributed with
+ * this project for additional information regarding copyright ownership.
+ *
+ * Copyright (c) 2011-2013, Neon-Eleanor Team. All rights reserved.
+ */
+package com.ne.gs.database.mysql5;
+
+import com.ne.commons.database.DatabaseFactory;
+import com.ne.gs.database.dao.MySQL5DAOUtils;
+import com.ne.gs.database.dao.PlayerNpcFactionsDAO;
+import com.ne.gs.model.gameobjects.PersistentState;
+import com.ne.gs.model.gameobjects.player.Player;
+import com.ne.gs.model.gameobjects.player.npcFaction.ENpcFactionQuestState;
+import com.ne.gs.model.gameobjects.player.npcFaction.NpcFaction;
+import com.ne.gs.model.gameobjects.player.npcFaction.NpcFactions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
+/**
+ * @author MrPoke
+ */
+public class MySQL5PlayerNpcFactionsDAO extends PlayerNpcFactionsDAO {
+
+    /**
+     * Logger
+     */
+    private static final Logger log = LoggerFactory.getLogger(MySQL5PlayerNpcFactionsDAO.class);
+
+    public static final String SELECT_QUERY = "SELECT `faction_id`, `active`, `time`, `state`, `quest_id` FROM player_npc_factions WHERE `player_id`=?";
+    public static final String INSERT_QUERY = "INSERT INTO player_npc_factions (`player_id`, `faction_id`, `active`, `time`, `state`, `quest_id`) VALUES (?,?,?,?,?,?)";
+    public static final String UPDATE_QUERY = "UPDATE player_npc_factions SET `active`=?, `time`=?, `state`=?, `quest_id`=?  WHERE `player_id`=? AND `faction_id`=?";
+
+    @Override
+    public void loadNpcFactions(Player player) {
+
+        Connection con = null;
+        try {
+            con = DatabaseFactory.getConnection();
+            PreparedStatement stmt = con.prepareStatement(SELECT_QUERY);
+            stmt.setInt(1, player.getObjectId());
+            ResultSet rset = stmt.executeQuery();
+            NpcFactions factions = new NpcFactions(player);
+            player.setNpcFactions(factions);
+            while (rset.next()) {
+                int faction_id = rset.getInt("faction_id");
+                boolean active = rset.getBoolean("active");
+                int time = rset.getInt("time");
+                int questId = rset.getInt("quest_id");
+                ENpcFactionQuestState state = ENpcFactionQuestState.valueOf(rset.getString("state"));
+                NpcFaction faction = new NpcFaction(faction_id, time, active, state, questId);
+                faction.setPersistentState(PersistentState.UPDATED);
+                factions.addNpcFaction(faction);
+            }
+            rset.close();
+            stmt.close();
+        } catch (Exception e) {
+            log.error("Could not restore Npc faction data for playerObjId: " + player.getObjectId() + " from GDB: " + e.getMessage(), e);
+        } finally {
+            DatabaseFactory.close(con);
+        }
+    }
+
+    @Override
+    public void storeNpcFactions(Player player) {
+        for (NpcFaction npcFaction : player.getNpcFactions().getNpcFactions()) {
+            switch (npcFaction.getPersistentState()) {
+                case NEW:
+                    insertNpcFaction(player.getObjectId(), npcFaction);
+                    break;
+                case UPDATE_REQUIRED:
+                    updateNpcFaction(player.getObjectId(), npcFaction);
+                    break;
+            }
+        }
+    }
+
+    private void insertNpcFaction(int playerObjectId, NpcFaction faction) {
+        Connection con = null;
+        try {
+            con = DatabaseFactory.getConnection();
+            PreparedStatement stmt = con.prepareStatement(INSERT_QUERY);
+            stmt.setInt(1, playerObjectId);
+            stmt.setInt(2, faction.getId());
+            stmt.setBoolean(3, faction.isActive());
+            stmt.setInt(4, faction.getTime());
+            stmt.setString(5, faction.getState().name());
+            stmt.setInt(6, faction.getQuestId());
+            stmt.execute();
+            stmt.close();
+        } catch (Exception e) {
+            log.error("Could not insert Npc faction data for playerObjId: " + playerObjectId + " from GDB: " + e.getMessage(), e);
+        } finally {
+            DatabaseFactory.close(con);
+        }
+    }
+
+    private void updateNpcFaction(int playerObjectId, NpcFaction faction) {
+        Connection con = null;
+        try {
+            con = DatabaseFactory.getConnection();
+            PreparedStatement stmt = con.prepareStatement(UPDATE_QUERY);
+            stmt.setBoolean(1, faction.isActive());
+            stmt.setInt(2, faction.getTime());
+            stmt.setString(3, faction.getState().name());
+            stmt.setInt(4, faction.getQuestId());
+            stmt.setInt(5, playerObjectId);
+            stmt.setInt(6, faction.getId());
+            stmt.execute();
+            stmt.close();
+        } catch (Exception e) {
+            log.error("Could not update Npc faction data for playerObjId: " + playerObjectId + " from GDB: " + e.getMessage(), e);
+        } finally {
+            DatabaseFactory.close(con);
+        }
+    }
+
+    @Override
+    public boolean supports(String arg0, int arg1, int arg2) {
+        return MySQL5DAOUtils.supports(arg0, arg1, arg2);
+    }
+}

@@ -1,0 +1,28 @@
+/*
+ * This file is part of Neon-Eleanor project
+ *
+ * This is proprietary software. See the EULA file distributed with
+ * this project for additional information regarding copyright ownership.
+ *
+ * Copyright (c) 2011-2013, Neon-Eleanor Team. All rights reserved.
+ */
+package com.ne.gs.model;
+
+/**
+ * @author zdead
+ */
+public enum PetitionStatus {
+    PENDING(0),
+    IN_PROGRESS(1),
+    REPLIED(2);
+
+    private final int element;
+
+    private PetitionStatus(int id) {
+        element = id;
+    }
+
+    public int getElementId() {
+        return element;
+    }
+}

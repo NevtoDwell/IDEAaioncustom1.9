@@ -1,0 +1,25 @@
+/*
+ * This file is part of Neon-Eleanor project
+ *
+ * This is proprietary software. See the EULA file distributed with
+ * this project for additional information regarding copyright ownership.
+ *
+ * Copyright (c) 2011-2013, Neon-Eleanor Team. All rights reserved.
+ */
+package com.ne.gs.ai2;
+
+import com.ne.gs.model.gameobjects.Creature;
+import com.ne.gs.model.gameobjects.player.Player;
+
+/**
+ * @author ATracer
+ */
+public abstract class AI2Request {
+
+    public abstract void acceptRequest(Creature requester, Player responder);
+
+    public void denyRequest(Creature requester, Player responder) {
+    }
+
+    ;
+}

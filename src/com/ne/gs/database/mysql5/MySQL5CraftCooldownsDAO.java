@@ -1,0 +1,121 @@
+/*
+ * This file is part of Neon-Eleanor project
+ *
+ * This is proprietary software. See the EULA file distributed with
+ * this project for additional information regarding copyright ownership.
+ *
+ * Copyright (c) 2011-2013, Neon-Eleanor Team. All rights reserved.
+ */
+package com.ne.gs.database.mysql5;
+
+import com.ne.commons.database.DatabaseFactory;
+import com.ne.gs.database.dao.CraftCooldownsDAO;
+import com.ne.gs.database.dao.MySQL5DAOUtils;
+import com.ne.gs.model.gameobjects.player.Player;
+import javolution.util.FastMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Map;
+
+/**
+ * @author synchro2
+ */
+public class MySQL5CraftCooldownsDAO extends CraftCooldownsDAO {
+
+    private static final Logger log = LoggerFactory.getLogger(MySQL5CraftCooldownsDAO.class);
+
+    public static final String INSERT_QUERY = "INSERT INTO `craft_cooldowns` (`player_id`, `delay_id`, `reuse_time`) VALUES (?,?,?)";
+    public static final String DELETE_QUERY = "DELETE FROM `craft_cooldowns` WHERE `player_id`=?";
+    public static final String SELECT_QUERY = "SELECT `delay_id`, `reuse_time` FROM `craft_cooldowns` WHERE `player_id`=?";
+
+    @Override
+    public void loadCraftCooldowns(Player player) {
+        Connection con = null;
+        FastMap<Integer, Long> craftCoolDowns = new FastMap<>();
+        try {
+            con = DatabaseFactory.getConnection();
+            PreparedStatement stmt = con.prepareStatement(SELECT_QUERY);
+
+            stmt.setInt(1, player.getObjectId());
+            ResultSet rset = stmt.executeQuery();
+
+            while (rset.next()) {
+                int delayId = rset.getInt("delay_id");
+                long reuseTime = rset.getLong("reuse_time");
+                int delay = (int) ((reuseTime - System.currentTimeMillis()) / 1000);
+
+                if (delay > 0) {
+                    craftCoolDowns.put(delayId, reuseTime);
+                }
+            }
+            player.getCraftCooldownList().setCraftCoolDowns(craftCoolDowns);
+            rset.close();
+            stmt.close();
+        } catch (SQLException e) {
+            log.error("LoadcraftCoolDowns", e);
+        } finally {
+            DatabaseFactory.close(con);
+        }
+    }
+
+    @Override
+    public void storeCraftCooldowns(Player player) {
+        deleteCraftCoolDowns(player);
+        Map<Integer, Long> craftCoolDowns = player.getCraftCooldownList().getCraftCoolDowns();
+
+        if (craftCoolDowns == null) {
+            return;
+        }
+
+        for (Map.Entry<Integer, Long> entry : craftCoolDowns.entrySet()) {
+            int delayId = entry.getKey();
+            long reuseTime = entry.getValue();
+
+            if (reuseTime < System.currentTimeMillis()) {
+                continue;
+            }
+
+            Connection con = null;
+
+            try {
+                con = DatabaseFactory.getConnection();
+                PreparedStatement stmt = con.prepareStatement(INSERT_QUERY);
+
+                stmt.setInt(1, player.getObjectId());
+                stmt.setInt(2, delayId);
+                stmt.setLong(3, reuseTime);
+                stmt.execute();
+            } catch (SQLException e) {
+                log.error("storecraftCoolDowns", e);
+            } finally {
+                DatabaseFactory.close(con);
+            }
+        }
+    }
+
+    private void deleteCraftCoolDowns(Player player) {
+        Connection con = null;
+
+        try {
+            con = DatabaseFactory.getConnection();
+            PreparedStatement stmt = con.prepareStatement(DELETE_QUERY);
+
+            stmt.setInt(1, player.getObjectId());
+            stmt.execute();
+        } catch (SQLException e) {
+            log.error("deletecraftCoolDowns", e);
+        } finally {
+            DatabaseFactory.close(con);
+        }
+    }
+
+    @Override
+    public boolean supports(String arg0, int arg1, int arg2) {
+        return MySQL5DAOUtils.supports(arg0, arg1, arg2);
+    }
+}

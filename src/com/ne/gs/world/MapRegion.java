@@ -1,0 +1,360 @@
+/*
+ * This file is part of Neon-Eleanor project
+ *
+ * This is proprietary software. See the EULA file distributed with
+ * this project for additional information regarding copyright ownership.
+ *
+ * Copyright (c) 2011-2013, Neon-Eleanor Team. All rights reserved.
+ */
+package com.ne.gs.world;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import javolution.util.FastMap;
+import javolution.util.FastMap.Entry;
+import org.apache.commons.lang3.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.ne.gs.ai2.event.AIEventType;
+import com.ne.gs.configs.main.SiegeConfig;
+import com.ne.gs.configs.main.WorldConfig;
+import com.ne.gs.model.gameobjects.Creature;
+import com.ne.gs.model.gameobjects.StaticDoor;
+import com.ne.gs.model.gameobjects.VisibleObject;
+import com.ne.gs.model.gameobjects.player.Player;
+import com.ne.gs.model.gameobjects.siege.SiegeNpc;
+import com.ne.gs.utils.ThreadPoolManager;
+import com.ne.gs.world.zone.ZoneInstance;
+import com.ne.gs.world.zone.ZoneName;
+
+/**
+ * Just some part of map.
+ *
+ * @author -Nemesiss-
+ */
+public class MapRegion {
+
+    private static final Logger log = LoggerFactory.getLogger(MapRegion.class);
+
+    /**
+     * Region id of this map region [NOT WORLD ID!]
+     */
+    private final int regionId;
+    /**
+     * WorldMapInstance witch is parent of this map region.
+     */
+    private final WorldMapInstance parent;
+    /**
+     * Surrounding regions + self.
+     */
+    private volatile MapRegion[] neighbours = new MapRegion[0];
+    /**
+     * Objects on this map region.
+     */
+    private final FastMap<Integer, VisibleObject> objects = new FastMap<Integer, VisibleObject>().shared();
+
+    private final AtomicInteger playerCount = new AtomicInteger(0);
+
+    private final AtomicBoolean regionActive = new AtomicBoolean(false);
+
+    /**
+     * Zones in this region
+     */
+    private FastMap<Integer, TreeSet<ZoneInstance>> zoneMap;
+
+    /**
+     * Constructor.
+     *
+     * @param id
+     * @param parent
+     */
+    MapRegion(int id, WorldMapInstance parent, ZoneInstance[] zones) {
+        regionId = id;
+        this.parent = parent;
+        createZoneMap(zones);
+        addNeighbourRegion(this);
+    }
+
+    /**
+     * Return World map id.
+     *
+     * @return world map id
+     */
+    public Integer getMapId() {
+        return getParent().getMapId();
+    }
+
+    /**
+     * Return an instance of {@link World}, which keeps map, to which belongs this region
+     */
+    public World getWorld() {
+        return getParent().getWorld();
+    }
+
+    /**
+     * Returns region id of this map region. [NOT WORLD ID!]
+     *
+     * @return region id.
+     */
+    public int getRegionId() {
+        return regionId;
+    }
+
+    /**
+     * Returns WorldMapInstance witch is parent of this instance
+     *
+     * @return parent
+     */
+    public WorldMapInstance getParent() {
+        return parent;
+    }
+
+    /**
+     * Returns iterator over AionObjects on this region
+     *
+     * @return objects iterator
+     */
+    public FastMap<Integer, VisibleObject> getObjects() {
+        return objects;
+    }
+
+    public Map<Integer, StaticDoor> getDoors() {
+        Map<Integer, StaticDoor> doors = new HashMap<>();
+        for (VisibleObject obj : objects.values()) {
+            if (obj instanceof StaticDoor) {
+                StaticDoor door = (StaticDoor) obj;
+                doors.put(door.getSpawn().getStaticId(), door);
+            }
+        }
+        return doors;
+    }
+
+    /**
+     * @return the neighbours
+     */
+    public MapRegion[] getNeighbours() {
+        return neighbours;
+    }
+
+    /**
+     * Add neighbour region to this region neighbours list.
+     *
+     * @param neighbour
+     */
+    void addNeighbourRegion(MapRegion neighbour) {
+        neighbours = ArrayUtils.add(neighbours, neighbour);
+    }
+
+    /**
+     * Add AionObject to this region objects list.
+     *
+     * @param object
+     */
+    void add(VisibleObject object) {
+        if (objects.put(object.getObjectId(), object) == null) {
+            if (object instanceof Player) {
+                checkActiveness(playerCount.incrementAndGet() > 0);
+            }
+        }
+    }
+
+    /**
+     * Remove AionObject from region objects list.
+     *
+     * @param object
+     */
+    void remove(VisibleObject object) {
+        if (objects.remove(object.getObjectId()) != null) {
+            if (object instanceof Player) {
+                checkActiveness(playerCount.decrementAndGet() > 0);
+            }
+        }
+    }
+
+    final void checkActiveness(boolean active) {
+        if (active && regionActive.compareAndSet(false, true)) {
+            startActivation();
+        } else if (!active) {
+            startDeactivation();
+        }
+    }
+
+    final void startActivation() {
+        ThreadPoolManager.getInstance().schedule(new Runnable() {
+
+            @Override
+            public void run() {
+                if (log.isDebugEnabled()) {
+                    log.debug("Activating in map {} region {}", getMapId(), regionId);
+                }
+                MapRegion.this.activateObjects();
+                for (MapRegion neighbor : getNeighbours()) {
+                    neighbor.activate();
+                }
+            }
+        }, 1000);
+    }
+
+    final void startDeactivation() {
+        ThreadPoolManager.getInstance().schedule(new Runnable() {
+            @Override
+            public void run() {
+                if (log.isDebugEnabled()) {
+                    log.debug("Deactivating in map {} region {}", getMapId(), regionId);
+                }
+                for (MapRegion neighbor : getNeighbours()) {
+                    if (!neighbor.isNeighboursActive()) {
+                        neighbor.deactivate();
+                    }
+                }
+            }
+        }, 60000);
+    }
+
+    public void activate() {
+        if (regionActive.compareAndSet(false, true)) {
+            activateObjects();
+        }
+    }
+
+    /**
+     * Send ACTIVATE event to all objects with AI2
+     */
+    private void activateObjects() {
+        for (VisibleObject visObject : objects.values()) {
+            if (visObject instanceof Creature) {
+                Creature creature = (Creature) visObject;
+                creature.getAi2().onGeneralEvent(AIEventType.ACTIVATE);
+            }
+        }
+    }
+
+    public void deactivate() {
+        if (regionActive.compareAndSet(true, false)) {
+            deactivateObjects();
+        }
+    }
+
+    /**
+     * Send DEACTIVATE event to all objects with AI2
+     */
+    private void deactivateObjects() {
+        for (VisibleObject visObject : objects.values()) {
+            if (visObject instanceof Creature && (!SiegeConfig.BALAUR_AUTO_ASSAULT || !(visObject instanceof SiegeNpc))) {
+                Creature creature = (Creature) visObject;
+                creature.getAi2().onGeneralEvent(AIEventType.DEACTIVATE);
+            }
+        }
+    }
+
+    public boolean isMapRegionActive() {
+        return !WorldConfig.WORLD_ACTIVE_TRACE || regionActive.get();
+    }
+
+    boolean isNeighboursActive() {
+        for (MapRegion r : neighbours) {
+            if (r != null && r.regionActive.get() && r.playerCount.get() > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void revalidateZones(Creature creature) {
+        for (Entry<Integer, TreeSet<ZoneInstance>> e = zoneMap.head(), mapEnd = zoneMap.tail(); (e = e.getNext()) != mapEnd; ) {
+            boolean foundZone = false;
+            int category = e.getKey();
+            TreeSet<ZoneInstance> zones = e.getValue();
+            for (ZoneInstance zone : zones) {
+                if (!creature.isSpawned() || category != -1 && foundZone) {
+                    zone.onLeave(creature);
+                    continue;
+                }
+                boolean result = zone.revalidate(creature);
+                if (!result) {
+                    zone.onLeave(creature);
+                    continue;
+                }
+                if (category != -1) {
+                    foundZone = true;
+                }
+                zone.onEnter(creature);
+            }
+        }
+    }
+
+    public List<ZoneInstance> getZones(Creature creature) {
+        List<ZoneInstance> z = new ArrayList<>();
+        for (Entry<Integer, TreeSet<ZoneInstance>> e = zoneMap.head(), mapEnd = zoneMap.tail(); (e = e.getNext()) != mapEnd; ) {
+            TreeSet<ZoneInstance> zones = e.getValue();
+            for (ZoneInstance zone : zones) {
+                if (zone.isInsideCreature(creature)) {
+                    z.add(zone);
+                }
+            }
+        }
+        return z;
+    }
+
+    public boolean onDie(Creature attacker, Creature target) {
+        for (Entry<Integer, TreeSet<ZoneInstance>> e = zoneMap.head(), mapEnd = zoneMap.tail(); (e = e.getNext()) != mapEnd; ) {
+            TreeSet<ZoneInstance> zones = e.getValue();
+            for (ZoneInstance zone : zones) {
+                if (zone.isInsideCreature(target)) {
+                    if (zone.onDie(attacker, target)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean isInsideZone(ZoneName zoneName, float x, float y, float z) {
+        for (Entry<Integer, TreeSet<ZoneInstance>> e = zoneMap.head(), mapEnd = zoneMap.tail(); (e = e.getNext()) != mapEnd; ) {
+            TreeSet<ZoneInstance> zones = e.getValue();
+            for (ZoneInstance zone : zones) {
+                if (zone.getZoneTemplate().getName() != zoneName) {
+                    continue;
+                }
+                return zone.isInsideCordinate(x, y, z);
+            }
+        }
+        return false;
+    }
+
+    public boolean isInsideZone(ZoneName zoneName, Creature creature) {
+        for (Entry<Integer, TreeSet<ZoneInstance>> e = zoneMap.head(), mapEnd = zoneMap.tail(); (e = e.getNext()) != mapEnd; ) {
+            TreeSet<ZoneInstance> zones = e.getValue();
+            for (ZoneInstance zone : zones) {
+                if (zone.getZoneTemplate().getName() != zoneName) {
+                    continue;
+                }
+                return zone.isInsideCreature(creature);
+            }
+        }
+        return false;
+    }
+
+    private void createZoneMap(ZoneInstance[] zones) {
+        zoneMap = new FastMap<>();
+        for (ZoneInstance zone : zones) {
+            int category = -1;
+            if (zone.getZoneTemplate().getPriority() != 0) {
+                category = zone.getZoneTemplate().getZoneType().ordinal();
+            }
+            TreeSet<ZoneInstance> zoneCategory = zoneMap.get(category);
+            if (zoneCategory == null) {
+                zoneCategory = new TreeSet<>();
+                zoneMap.put(category, zoneCategory);
+            }
+            zoneCategory.add(zone);
+        }
+    }
+}
