@@ -36,7 +36,7 @@ public final class AbyssService {
         World.getInstance().doOnAllPlayers(new Visitor<Player>() {
             @Override
             public void visit(Player p) {
-                if (p != victim) {
+                if (p != victim && p.getRace() != victim.getRace()) {
                     p.sendPck(SM_SYSTEM_MESSAGE.STR_ABYSS_ORDER_RANKER_DIE(victim, AbyssRankEnum.getRankDescriptionId(victim)));
                 }
             }
