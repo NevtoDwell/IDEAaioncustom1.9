@@ -21,11 +21,11 @@ import com.ne.gs.utils.PacketSendUtility;
 import com.ne.gs.utils.ThreadPoolManager;
 import com.ne.gs.world.World;
 import com.ne.gs.world.zone.ZoneInstance;
-import com.ne.gs.world.zone.ZoneName;
-import java.util.concurrent.Future;
 import javolution.util.FastMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.Future;
 
 /**
  *
@@ -41,9 +41,6 @@ public class DuelService {
         return SingletonHolder.instance;
     }
 
-    /**
-     * @param duels
-     */
     private DuelService() {
         this.duels = new FastMap<Integer, Integer>().shared();
         this.drawTasks = new FastMap<Integer, Future<?>>().shared();
@@ -64,27 +61,37 @@ public class DuelService {
         RequestResponseHandler rrh = new RequestResponseHandler(requester) {
 
             @Override
-            public void denyRequest(Creature requester, Player responder) {
+            public void denyRequest(Creature requester, Player responder) { //"Кто-то" вызывает вас на дуэль. Согласиться? - НЕТ
                 rejectDuelRequest((Player) requester, responder);
             }
 
             @Override
-            public void acceptRequest(Creature requester, Player responder) {
-                Player player = (Player) requester;
-                Future<?> task = drawTasks.get(player.getObjectId());
-                if (task != null && !task.isDone()) {
+            public void acceptRequest(Creature requester, Player responder) { //"Кто-то" вызывает вас на дуэль. Согласиться? - ДА
+                Player requesterPlayer = (Player) requester;
+                Player responderPlayer = responder;
+                Future<?> task1 = drawTasks.get(requesterPlayer.getObjectId());
+                Future<?> task2 = drawTasks.get(responderPlayer.getObjectId());
+                if (task1 != null && !task1.isDone()) { //если дуэль существует и она не закончена;
+                    PacketSendUtility.sendYellowMessageOnCenter(responder,"\"" + requester.getName() + "\" уже в дуэли! | \"" +
+                            requester.getName() + "\" is already in a duel!" );
+                    return;
                 }
-                else if (isDueling(requester.getObjectId()) || isDueling(responder.getObjectId())) {
+                else if (task2 != null && !task2.isDone()) { //если дуэль существует и она не закончена;
+                    PacketSendUtility.sendYellowMessageOnCenter(responder, "Вы в дуэли с другим игроком! | You are already in a duel with another player!");
+                    PacketSendUtility.sendYellowMessageOnCenter((Player) requester, "\"" + responder.getName() + "\" начал дуэль с другим игроком! | \"" +
+                            responder.getName() + "\" started a duel with another player!");
+                    return;
                 }
                 else{
-                    startDuel(player, responder);
-                }                         
+                    startDuel(requesterPlayer, responderPlayer);
+                }
             }
         };
+
         responder.getResponseRequester().putRequest(SM_QUESTION_WINDOW.STR_DUEL_DO_YOU_ACCEPT_REQUEST, rrh);
         PacketSendUtility.sendPck(responder, new SM_QUESTION_WINDOW(SM_QUESTION_WINDOW.STR_DUEL_DO_YOU_ACCEPT_REQUEST, 0, 0, requester.getName()));
-        PacketSendUtility.sendPck(responder, SM_SYSTEM_MESSAGE.STR_DUEL_REQUESTED(requester.getName()));
-        PacketSendUtility.sendPck(requester, SM_SYSTEM_MESSAGE.STR_DUEL_REQUEST_TO_PARTNER(responder.getName()));
+        PacketSendUtility.sendPck(responder, SM_SYSTEM_MESSAGE.STR_DUEL_REQUESTED(requester.getName())); // сообщение "вызываем на дуэль"
+        PacketSendUtility.sendPck(requester, SM_SYSTEM_MESSAGE.STR_DUEL_REQUEST_TO_PARTNER(responder.getName())); // сообщение "вызываем на дуэль"
     }
 
     /**
@@ -117,26 +124,18 @@ public class DuelService {
                 return;
             }
         }
-        
-        if(requester.isInsideZone(ZoneName.get("LC1_PVP_SUB_C")) ||   //фикс команды /дуэль в на дуэль арене элиз/панда
-           requester.isInsideZone(ZoneName.get("DC1_PVP_ZONE")))     
-        {
-            PacketSendUtility.sendPck(requester, SM_SYSTEM_MESSAGE.STR_MSG_DUEL_CANT_IN_THIS_ZONE);
-            return;
-        }           
-        
-
-        
-        
 
         RequestResponseHandler rrh = new RequestResponseHandler(responder) {
 
             @Override
-            public void denyRequest(Creature requester, Player responder) {
+            public void denyRequest(Creature requester, Player responder) { // Хотите отменить вызов на дуэль персонажа "Ник" - Нет
                 Player player = (Player) requester;
                 Future<?> task = drawTasks.get(player.getObjectId());
-                if (task != null && !task.isDone()) {
-                }else{
+                if (task != null && !task.isDone()) { // с запросом!
+                    PacketSendUtility.sendYellowMessageOnCenter(responder, "\"" + requester.getName() + "\" уже в дуэли! | \"" +
+                            requester.getName() + "\" is already in a duel!");
+                }
+                else{
                     onDuelRequest(responder, (Player) requester);
                 }          
             }
@@ -166,7 +165,6 @@ public class DuelService {
      * Cancels the duel request
      *
      * @param target the duel target
-     * @param requester
      */
     private void cancelDuelRequest(Player owner, Player target) {
         // log.debug("[Duel] Player " + owner.getName() + " cancelled his duel request with " + target.getName());
@@ -180,7 +178,7 @@ public class DuelService {
      * @param requester the player to start duel with
      * @param responder the other player
      */
-    
+
     private void startDuel(Player requester, Player responder) {
     PacketSendUtility.sendPck(requester, SM_DUEL.SM_DUEL_STARTED(responder.getObjectId()));
     PacketSendUtility.sendPck(responder, SM_DUEL.SM_DUEL_STARTED(requester.getObjectId()));
@@ -189,6 +187,7 @@ public class DuelService {
             @Override
             public void run() {              
                 createDuel(requester.getObjectId(), responder.getObjectId());
+                PacketSendUtility.broadcastPacket(requester, new SM_SYSTEM_MESSAGE(1300136, responder.getName(), requester.getName()), true);
             }
         }, 3000);       
     }
@@ -246,8 +245,10 @@ public class DuelService {
                 opponent.getSummonedObj().getController().cancelCurrentSkill();
             }
 
+
             PacketSendUtility.sendPck(opponent, SM_DUEL.SM_DUEL_RESULT(DuelResult.DUEL_WON, player.getName()));
             PacketSendUtility.sendPck(player, SM_DUEL.SM_DUEL_RESULT(DuelResult.DUEL_LOST, opponent.getName()));
+            PacketSendUtility.broadcastPacket(opponent, new SM_SYSTEM_MESSAGE(1300137, opponent.getName(), player.getName()), true);
         } else {
             log.warn("CHECKPOINT : duel opponent is already out of world");
         }
@@ -292,7 +293,7 @@ public class DuelService {
                 if (isDueling(requester.getObjectId(), responder.getObjectId())) {
                     PacketSendUtility.sendPck(requester, SM_DUEL.SM_DUEL_RESULT(DuelResult.DUEL_DRAW, requester.getName()));
                     PacketSendUtility.sendPck(responder, SM_DUEL.SM_DUEL_RESULT(DuelResult.DUEL_DRAW, responder.getName()));
-                    removeDuel(requester.getObjectId(), responder.getObjectId());               
+                    removeDuel(requester.getObjectId(), responder.getObjectId());
                 }
             }
         }, 302900); // 5 minutes battle retail like
@@ -307,8 +308,8 @@ public class DuelService {
                 PacketSendUtility.sendPck(requester, new SM_QUEST_ACTION(4, ((300 / 100) + 2) * 60));
                 PacketSendUtility.sendPck(responder, new SM_QUEST_ACTION(4, ((300 / 100) + 2) * 60));
             }
-        }, 2900);    
-        
+        }, 2900);
+
     }
 
     /**
@@ -355,7 +356,7 @@ public class DuelService {
 
     private void removeTask(int playerId) {
         Future<?> task = drawTasks.get(playerId);
-        if (task != null && !task.isDone()) {
+        if (task != null && !task.isDone()) { //если дуэль существует и она не закончена;
             task.cancel(true);
             drawTasks.remove(playerId);
         }
