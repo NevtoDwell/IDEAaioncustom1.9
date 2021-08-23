@@ -63,6 +63,15 @@ public class ResponseRequester {
         return false;
     }
 
+    //Здесь получаем текущее сообщение в игре! Использовал для дуэли!
+    public synchronized boolean respond(int messageId) {
+        RequestResponseHandler handler = map.get(messageId);
+        if (handler != null) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Automatically responds 0 to all requests, passing the given player as the responder
      */
