@@ -45,9 +45,6 @@ public class CM_QUESTION_RESPONSE extends AionClientPacket {
     @Override
     protected void runImpl() {
         Player player = getConnection().getActivePlayer();
-        if (player.isTrading()) {
-            return;
-        }
         player.getResponseRequester().respond(questionid, response);
     }
 
