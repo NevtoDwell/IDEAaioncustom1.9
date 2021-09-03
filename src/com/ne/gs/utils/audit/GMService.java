@@ -82,9 +82,8 @@ public class GMService {
         protected static final GMService instance = new GMService();
     }
 
-    public static enum Messages implements L10N.Translatable {
+    public enum Messages implements L10N.Translatable {
         ENTERED("\uE042 Annonce: %s just entered into Atreia.");
-        //ENTERED("\uE042 Annonce: %s%s just entered into Atreia."); - было (%s (тэг) + %s(имя))player.getAccessLevel()
         private final String _defaultValue;
 
         private Messages(String defaultValue) {

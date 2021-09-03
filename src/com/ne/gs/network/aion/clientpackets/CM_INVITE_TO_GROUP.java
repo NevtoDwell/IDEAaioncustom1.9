@@ -34,7 +34,11 @@ public class CM_INVITE_TO_GROUP extends AionClientPacket {
 
     @Override
     protected void runImpl() {
-        String playerName = ChatUtil.undecorateName(name);
+        String playerName = ChatUtil.getRealAdminName(name);
+
+        playerName = playerName.replace("\uE065", "");
+        playerName = playerName.replace("\uE04C", "");
+        playerName = playerName.replace("\uE050", "");
 
         Player inviter = getConnection().getActivePlayer();
         if (inviter.getLifeStats().isAlreadyDead()) {

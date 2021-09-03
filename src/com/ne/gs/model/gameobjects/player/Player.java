@@ -8,15 +8,7 @@
  */
 package com.ne.gs.model.gameobjects.player;
 
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import com.google.common.collect.ImmutableMap;
-import gnu.trove.map.hash.THashMap;
-import javolution.util.FastList;
-
 import com.ne.commons.Sys;
 import com.ne.commons.annotations.NotNull;
 import com.ne.commons.func.tuple.Tuple;
@@ -25,7 +17,6 @@ import com.ne.commons.utils.L10N;
 import com.ne.gs.configs.administration.AdminConfig;
 import com.ne.gs.configs.main.MembershipConfig;
 import com.ne.gs.configs.main.SecurityConfig;
-import com.ne.gs.configs.main.ShivaConfig;
 import com.ne.gs.controllers.FlyController;
 import com.ne.gs.controllers.PlayerController;
 import com.ne.gs.controllers.WindstreamController;
@@ -36,12 +27,7 @@ import com.ne.gs.controllers.effect.PlayerEffectController;
 import com.ne.gs.controllers.movement.PlayerMoveController;
 import com.ne.gs.controllers.observer.ActionObserver;
 import com.ne.gs.dataholders.DataManager;
-import com.ne.gs.model.ChatType;
-import com.ne.gs.model.Gender;
-import com.ne.gs.model.NpcType;
-import com.ne.gs.model.PlayerClass;
-import com.ne.gs.model.Race;
-import com.ne.gs.model.TribeClass;
+import com.ne.gs.model.*;
 import com.ne.gs.model.account.Account;
 import com.ne.gs.model.actions.PlayerActions;
 import com.ne.gs.model.actions.PlayerMode;
@@ -106,7 +92,11 @@ import com.ne.gs.world.InstanceType;
 import com.ne.gs.world.World;
 import com.ne.gs.world.WorldPosition;
 import com.ne.gs.world.zone.ZoneName;
-import java.util.Objects;
+import gnu.trove.map.hash.THashMap;
+import javolution.util.FastList;
+
+import java.sql.Timestamp;
+import java.util.*;
 
 /**
  * This class is representing Player object, it contains all needed data.
@@ -2196,46 +2186,6 @@ public class Player extends Creature {
         rideObservers.add(observer);
     }
 
-    public String getCustomTag(boolean isForChatCommands) {
-        String customTag = !getAcountTag().equals("%s") ? getAcountTag() : getAccessTag();
-        String customTagForChatCommands = !customTag.equals("%s") ? customTag
-                .substring(0, customTag.indexOf("%")) : "";
-        return isForChatCommands ? customTagForChatCommands : customTag;
-    }
-
-    private String getAccessTag() {
-        switch (getClientConnection().getAccount().getAccessLevel()) {
-            case 1:
-                return AdminConfig.ADMIN_TAG_1;
-            case 2:
-                return AdminConfig.ADMIN_TAG_2;
-            case 3:
-                return AdminConfig.ADMIN_TAG_3;
-            case 4:
-                return AdminConfig.ADMIN_TAG_4;
-            case 5:
-                return AdminConfig.ADMIN_TAG_5;
-            default:
-                return "%s";
-        }
-    }
-
-    private String getAcountTag() {
-        String accountName = getClientConnection().getAccount().getName();
-
-        if (accountName.equalsIgnoreCase("Imaginary")) {
-            return ShivaConfig.TAG_IMAGINARY;
-        } else if (accountName.equalsIgnoreCase("Thenice")) {
-            return ShivaConfig.TAG_NAKNICE;
-        } else if (accountName.equalsIgnoreCase("Carmel")) {
-            return ShivaConfig.TAG_CARMEL;
-        } else if (accountName.equalsIgnoreCase("coma")) {
-            return ShivaConfig.TAG_ELISSA;
-        } else {
-            return "%s";
-        }
-    }
-
     public int getRawKillCount() {
         return rawKillcount;
     }
@@ -2360,7 +2310,7 @@ public class Player extends Creature {
     public void setLegName(String ln) {
         if (ln == null) {
             if (isGM()) {
-                ln = AccessLevelEnum.getAlType(getAccessLevel()).getStatusName();
+                ln = AccessLevelEnum.getAlType(getAccessLevel()).getLegionName();
             } else {
                 ln = getLegion() == null ? "" : getLegion().getLegionName();
             }
@@ -2371,11 +2321,13 @@ public class Player extends Creature {
     public String getCustomLegionName() {
         return customLegName;
     }
-    
+
     public void setNewName(String name) {
         if (name == null) {
-            name = getName();
-            
+            if (isGM()) {
+                String tag = AccessLevelEnum.getAlType(getAccessLevel()).getTagForName();
+                name = tag + getName() + tag;
+            }
         }
         this.newname = name;
     }
@@ -2387,26 +2339,9 @@ public class Player extends Creature {
         return this.newname;
     }
 
+    //nameFormat = "%s";
     public String getNameFormat() {
         return this.nameFormat;
     }
-    
-    public void setNameFormat(String format) {
-        if (format == null) {
-            format = "%s";
-            StringBuilder sb = new StringBuilder(nameFormat);
-            
 
-            
-                int level = getAccessLevel();
-                if (level > 0 && level < 8) {
-                    String al = AccessLevelEnum.getAlType(level).getName();
-                    format = sb.insert(0, al.substring(0, al.length() - 3)).toString();
-                }
-            
-        }
-        this.nameFormat = format;
-    }
-    
-    
 }

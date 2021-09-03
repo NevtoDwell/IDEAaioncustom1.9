@@ -281,6 +281,7 @@ public final class PlayerEnterWorldService {
             AbyssSkillService.onEnterWorld(player);
             AccessGmSkills.onEnterWorldGm(player);
 
+
             //client.sendPacket(new SM_SKILL_COOLDOWN(player.getSkillCoolDowns()));
             //client.sendPacket(new SM_ITEM_COOLDOWN(player.getItemCoolDowns()));
 
@@ -315,7 +316,7 @@ public final class PlayerEnterWorldService {
 
             sendItemInfos(client, player);
             playerLoggedIn(player);
-            
+
             player.setNewName(null);
             player.setLegName(null);
 

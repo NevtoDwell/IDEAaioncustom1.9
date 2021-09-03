@@ -198,11 +198,11 @@ public class NpcFactions {
         npcFaction.setTime(getNextTime());
         npcFaction.setState(ENpcFactionQuestState.COMPLETE);
         timeLimit[npcFaction.isMentor() ? 1 : 0] = npcFaction.getTime();
-        //if (questTemplate.getMentorType() == QuestMentorType.MENTOR) { //если делаешь кв арахны выдаёт наставкинку крылья возле ника
-        //    owner.getCommonData().setMentorFlagTime((int) (System.currentTimeMillis() / 1000) + 60 * 60 * 24); // TODO 1 day
-        //    PacketSendUtility.broadcastPacket(owner, new SM_TITLE_INFO(owner, true), false);
-        //    owner.sendPck(new SM_TITLE_INFO(true));
-        //}
+        if (questTemplate.getMentorType() == QuestMentorType.MENTOR) { //fix если делаешь кв арахны выдаёт наставкинку крылья возле ника
+            owner.getCommonData().setMentorFlagTime((int) (System.currentTimeMillis() / 1000) + 60 * 60 * 24); // TODO 1 day
+            PacketSendUtility.broadcastPacket(owner, new SM_TITLE_INFO(owner, true), false);
+            owner.sendPck(new SM_TITLE_INFO(true));
+        }
     }
 
     /**

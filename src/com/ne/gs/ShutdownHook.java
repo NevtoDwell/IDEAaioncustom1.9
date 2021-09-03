@@ -77,10 +77,9 @@ public class ShutdownHook extends Thread {
             }
             while (onlinePlayers.hasNext()) {
                 Player player = onlinePlayers.next();
+                Collection<Effect> abnormalEffects = player.getEffectController().getAbnormalEffects();
                 if (player != null && player.getClientConnection() != null) {
                     PacketSendUtility.sendYellowMessageOnCenter(player, "\uE01C Сервер будет отключен через " + seconds + " секунд! | The server will be shut down in " + seconds + " seconds! \uE01C");
-                    //paralysis for all players
-                    Collection<Effect> abnormalEffects = player.getEffectController().getAbnormalEffects();
                     PacketSendUtility.broadcastPacket(player, new SM_ABNORMAL_EFFECT(player, AbnormalState.PARALYZE.getId(), abnormalEffects), true);
                 }
             }
@@ -180,10 +179,12 @@ public class ShutdownHook extends Thread {
      */
     public void doShutdown(int delay, int announceInterval, ShutdownMode mode) {
             ThreadPoolManager.getInstance().schedule(new Runnable() {
+
                 @Override
                 public void run() {
                     shutdownHook(delay, announceInterval, mode);
                 }
+
             }, 0);
     }
 

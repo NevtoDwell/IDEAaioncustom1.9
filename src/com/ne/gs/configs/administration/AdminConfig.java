@@ -48,23 +48,6 @@ public final class AdminConfig {
     /**
      * Custom TAG based on access level
      */
-    @Property(key = "gameserver.admin.tag.enable", defaultValue = "false")
-    public static boolean ADMIN_TAG_ENABLE;
-
-    @Property(key = "gameserver.admin.tag.1", defaultValue = "<GM> %s")
-    public static String ADMIN_TAG_1;
-
-    @Property(key = "gameserver.admin.tag.2", defaultValue = "<HEADGM> %s")
-    public static String ADMIN_TAG_2;
-
-    @Property(key = "gameserver.admin.tag.3", defaultValue = "<ADMIN> %s")
-    public static String ADMIN_TAG_3;
-
-    @Property(key = "gameserver.admin.tag.4", defaultValue = "<TAG_HERE> %s")
-    public static String ADMIN_TAG_4;
-
-    @Property(key = "gameserver.admin.tag.5", defaultValue = "<TAG_HERE> %s")
-    public static String ADMIN_TAG_5;
 
     @Property(key = "gameserver.admin.announce.levels", defaultValue = "*")
     public static String ANNOUNCE_LEVEL_LIST;

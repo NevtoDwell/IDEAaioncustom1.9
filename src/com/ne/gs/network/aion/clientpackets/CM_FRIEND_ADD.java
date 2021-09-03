@@ -43,11 +43,9 @@ public class CM_FRIEND_ADD extends AionClientPacket {
      */
     @Override
     protected void runImpl() {
-        targetName = targetName.replace("\uE024", "");
-        targetName = targetName.replace("\uE023", "");
-        if (targetName.contains(ChatUtil.HEART)) {
-            targetName = targetName.split(ChatUtil.HEART)[0].trim();
-        }
+        targetName = targetName.replace("\uE065", "");
+        targetName = targetName.replace("\uE04C", "");
+        targetName = targetName.replace("\uE050", "");
 
         targetName = ChatUtil.getRealAdminName(targetName);
 
@@ -81,7 +79,6 @@ public class CM_FRIEND_ADD extends AionClientPacket {
                     if (!targetPlayer.getCommonData().isOnline()) {
                         sendPacket(new SM_FRIEND_RESPONSE(targetName, SM_FRIEND_RESPONSE.TARGET_OFFLINE));
                     } else if (activePlayer.getFriendList().isFull() || responder.getFriendList().isFull()) {
-                        return;
                     } else {
                         SocialService.makeFriends((Player) requester, responder);
                     }

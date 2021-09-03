@@ -21,10 +21,6 @@ import com.ne.gs.world.WorldPosition;
  */
 public final class ChatUtil {
 
-    public static final String HEART = "\ue020";
-    public static final String VIP = "\ue023";
-    public static final String PREMIUM = "\ue024";
-
     public static String position(String label, WorldPosition pos) {
         return position(label, pos.getMapId(), pos.getX(), pos.getY(), pos.getZ());
     }
@@ -47,66 +43,7 @@ public final class ChatUtil {
     }
 
     public static String getRealAdminName(String name) {
-        String[] tags = new String[]{
-            AdminConfig.ADMIN_TAG_1,
-            AdminConfig.ADMIN_TAG_2,
-            AdminConfig.ADMIN_TAG_3,
-            AdminConfig.ADMIN_TAG_4,
-            AdminConfig.ADMIN_TAG_5
-        };
-
-        for (String tag : tags) {
-            String t = tag.replaceAll("%s", "");
-            if (name.contains(t))
-                return name.replaceAll(tag.replaceAll("%s", ""), "");
-
-        }
-
         return name;
     }
 
-    public static String decorateName(Player player) {
-        // orphaned players - later find/remove them
-        AionConnection con = player.getClientConnection();
-        if (con != null) {
-            if (AdminConfig.ADMIN_TAG_ENABLE && player.isGM()) {
-                return String.format(player.getCustomTag(false), player.getName());
-            }
-
-            String prefix = "";
-            if (MembershipConfig.ENABLE_NAMEDECOR) {
-                if (con.getAccount().getMembership() == 1) {
-                    prefix = PREMIUM;
-                } else if (con.getAccount().getMembership() == 2) {
-                    prefix = VIP;
-                }
-            }
-
-            if (WeddingsConfig.ENABLE_NAMEDECOR) {
-                if (player.isMarried()) {
-                    PlayerCommonData partner = PlayerCommonData.get(player.getPartnerId());
-                    if (partner != null) {
-                        return String.format("%s%s %s %s", prefix, player.getName(), HEART, partner.getName());
-                    }
-                }
-            } else {
-                return prefix + player.getName();
-            }
-        }
-
-        return player.getName();
-    }
-
-    public static String undecorateName(String input) {
-        if (MembershipConfig.ENABLE_NAMEDECOR) {
-            input = input.replace(VIP, "");
-            input = input.replace(PREMIUM, "");
-        }
-
-        if (WeddingsConfig.ENABLE_NAMEDECOR && input.contains(HEART)) {
-            input = input.split(HEART)[0].trim();
-        }
-
-        return getRealAdminName(input);
-    }
 }

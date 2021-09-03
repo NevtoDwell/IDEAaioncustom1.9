@@ -364,7 +364,7 @@ public class FFALoc extends CustomLocScript {
         public static final VisiblePlayerName STATIC = new VisiblePlayerName() {
             @Override
             public String onEvent(@NotNull Tuple2<Player, Player> e) {
-                return ChatUtil.decorateName(e._1);
+                return null;
             }
         };
 

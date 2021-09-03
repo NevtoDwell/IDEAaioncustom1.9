@@ -13,23 +13,23 @@ import com.ne.gs.configs.administration.AdminConfig;
  */
 public enum AccessLevelEnum {
 
-    AccessLevel0(0, "%s", "", new int[]{0}, "Welcome  %s"),
-    AccessLevel1(1, AdminConfig.ADMIN_TAG_1, "\ue042SUPPORT\ue043", new int[]{174, 175}, "Welcome SUPPORT %s"),
-    AccessLevel2(2, AdminConfig.ADMIN_TAG_2, "\ue042EVENT GM\ue043", new int[]{174, 175, 1904, 1911}, "Welcome EVENT GM %s"),
-    AccessLevel3(3, AdminConfig.ADMIN_TAG_3, "\ue042GAME MASTER\ue043", new int[]{174, 175, 1904, 1911}, "Welcome GAME MASTER %s"),
-    AccessLevel4(4, AdminConfig.ADMIN_TAG_4, "\ue042ADMINISTRATOR\ue043", new int[]{174, 175, 1904, 1911}, "Welcome ADMINISTRATOR %s"),
-    AccessLevel5(5, AdminConfig.ADMIN_TAG_5, "\ue050DEVELOPER\ue050", new int[]{174, 175, 1904, 1911}, "Welcome DEVELOPER %s");
+    AccessLevel0(0, "WHITE PORTAL", "", new int[]{0}, "Welcome  %s"),
+    AccessLevel1(1, "PORTAL", "\ue042SUPPORT\ue043", new int[]{174, 175}, "Welcome SUPPORT %s"),
+    AccessLevel2(2, "PORTAL", "\ue042EVENT GM\ue043", new int[]{174, 175, 1904, 1911}, "Welcome EVENT GM %s"),
+    AccessLevel3(3, "PORTAL", "\ue042GAME MASTER\ue043", new int[]{174, 175, 1904, 1911}, "Welcome GAME MASTER %s"),
+    AccessLevel4(4, "PORTAL", "\ue042ADMINISTRATOR\ue043", new int[]{174, 175, 1904, 1911}, "Welcome ADMINISTRATOR %s"),
+    AccessLevel5(5, "DREDGION", "\ue050DEVELOPER\ue050", new int[]{174, 175, 1904, 1911}, "Welcome DEVELOPER %s");
 
-    private int level; //
-    private final String nameLevel;
-    private String status;
+    private int level;
+    private final String gmTag;
+    private String newLegion;
     private int[] skills;
     private String notice;
 
-    AccessLevelEnum(int id, String name, String status, int[] skills, String notice) {
-        this.level = id;
-        this.nameLevel = name;
-        this.status = status;
+    AccessLevelEnum(int level, String gmTag, String newLegion, int[] skills, String notice) {
+        this.level = level;
+        this.gmTag = gmTag;
+        this.newLegion = newLegion;
         this.skills = skills;
         this.notice = notice;
     }
@@ -38,16 +38,25 @@ public enum AccessLevelEnum {
         return String.format(notice, name);
     }
 
-    public String getName() {
-        return nameLevel;
+    public String getTagForName() {
+        switch(gmTag){
+            case "WHITE PORTAL":
+                return "\uE065";
+            case "PORTAL":
+                return "\uE04C";
+            case "DREDGION":
+                return "\uE050";
+            default:
+                return "";
+        }
     }
 
     public int getLevel() {
         return level;
     }
 
-    public String getStatusName() {
-        return status;
+    public String getLegionName() {
+        return newLegion;
     }
 
     public int[] getSkills() {

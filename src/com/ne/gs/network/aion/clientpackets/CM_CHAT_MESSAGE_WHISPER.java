@@ -60,11 +60,9 @@ public class CM_CHAT_MESSAGE_WHISPER extends AionClientPacket {
      */
     @Override
     protected void runImpl() {
-        name = name.replace("\uE024", "");
-        name = name.replace("\uE023", "");
-        if (name.contains(ChatUtil.HEART)) {
-            name = name.split(ChatUtil.HEART)[0].trim();
-        }
+        name = name.replace("\uE065", "");
+        name = name.replace("\uE04C", "");
+        name = name.replace("\uE050", "");
 
         name = ChatUtil.getRealAdminName(name);
 

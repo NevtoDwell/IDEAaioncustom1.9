@@ -265,9 +265,6 @@ public class GameServer {
         if (EventsConfig.ENABLE_EVENT_SERVICE) {
             EventService.getInstance().start();
         }
-        if (WeddingsConfig.WEDDINGS_ENABLE) {
-            WeddingService.getInstance();
-        }
         
         if (CustomConfig.EVENT_MODE) {
             EventManager.getInstance().Init();
