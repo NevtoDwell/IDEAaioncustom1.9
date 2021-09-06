@@ -790,12 +790,16 @@ public final class QuestService {
         if (qs == null || qs.getStatus() != QuestStatus.START) {
             return false;
         }
+        if (drop.getCollectingStep() != 0) {
+            if (drop.getCollectingStep() != qs.getQuestVarById(0)) {
+                return false;
+            }
+        }
         QuestTemplate qt = DataManager.QUEST_DATA.getQuestById(questId);
         if (qt.getMentorType() == QuestMentorType.MENTE) {
             if (!player.isInGroup2()) {
                 return false;
             }
-
             PlayerGroup group = player.getPlayerGroup2();
             boolean found = false;
             for (Player member : group.getMembers()) {

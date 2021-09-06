@@ -29,6 +29,8 @@ public class QuestDrop {
     protected int chance;
     @XmlAttribute(name = "drop_each_member")
     protected int dropEachMember = 0;
+    @XmlAttribute(name = "collecting_step")
+    protected int collecting_step = 0;
 
     @XmlTransient
     protected int questId;
@@ -67,6 +69,10 @@ public class QuestDrop {
      */
     public boolean isDropEachMember() {
         return dropEachMember != 0;
+    }
+
+    public int getCollectingStep() {
+        return collecting_step;
     }
 
     /**
