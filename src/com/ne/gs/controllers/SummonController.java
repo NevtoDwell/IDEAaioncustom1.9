@@ -193,13 +193,13 @@ public class SummonController extends CreatureController<Summon> {
         super.onStartMove();
         getOwner().getMoveController().setInMove(true);
         getOwner().getObserveController().notifyMoveObservers();
-        PlayerMoveTaskManager.addPlayer(getOwner());
+        PlayerMoveTaskManager.getInstance().addPlayer(getOwner());
     }
 
     @Override
     public void onStopMove() {
         super.onStopMove();
-        PlayerMoveTaskManager.removePlayer(getOwner());
+        PlayerMoveTaskManager.getInstance().removePlayer(getOwner());
         getOwner().getObserveController().notifyMoveObservers();
         getOwner().getMoveController().setInMove(false);
     }

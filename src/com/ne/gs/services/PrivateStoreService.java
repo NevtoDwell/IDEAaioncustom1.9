@@ -8,6 +8,10 @@
  */
 package com.ne.gs.services;
 
+import com.ne.gs.model.actions.PlayerMode;
+import com.ne.gs.network.aion.serverpackets.SM_SYSTEM_MESSAGE;
+import com.ne.gs.skillengine.effect.AbnormalState;
+import com.ne.gs.skillengine.model.Effect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +30,8 @@ import com.ne.gs.network.aion.serverpackets.SM_EMOTION;
 import com.ne.gs.network.aion.serverpackets.SM_PRIVATE_STORE_NAME;
 import com.ne.gs.services.item.ItemService;
 import com.ne.gs.utils.PacketSendUtility;
+
+import java.util.Collection;
 
 /**
  * @author Simple
@@ -46,7 +52,15 @@ public final class PrivateStoreService {
          * Check if player already has a store, if not create one
          */
         // TODO synchronization
+
+
         if (activePlayer.getStore() == null) {
+            Collection<Effect> abnormalEffects = activePlayer.getEffectController().getAbnormalEffects();
+            if (abnormalEffects.size() > 0)  //фикс личной лавки
+            {
+                activePlayer.sendPck(SM_SYSTEM_MESSAGE.STR_PERSONAL_SHOP_DISABLED_IN_COMBAT_MODE);
+                return;
+            }
             createStore(activePlayer);
         }
 
@@ -87,9 +101,6 @@ public final class PrivateStoreService {
      * @param activePlayer
      */
     private static void createStore(Player activePlayer) {
-        if (activePlayer.isInState(CreatureState.RESTING)) {
-            return;
-        }
         activePlayer.setStore(new PrivateStore(activePlayer));
         activePlayer.setState(CreatureState.PRIVATE_SHOP);
         PacketSendUtility.broadcastPacket(activePlayer, new SM_EMOTION(activePlayer, EmotionType.OPEN_PRIVATESHOP, 0, 0), true);

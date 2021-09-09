@@ -442,7 +442,7 @@ public abstract class EffectTemplate {
         newEffect.setAccModBoost(effect.getAccModBoost());
         newEffect.initialize();
         
-        //фикс воздушных оков
+        //fix воздушных оков
         switch (newEffect.getSpellStatus()) {
             case DODGE:
             case RESIST:

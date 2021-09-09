@@ -60,7 +60,7 @@ public class AionConnection extends AConnection {
     /**
      * Possible states of AionConnection
      */
-    public static enum State {
+    public enum State {
         /**
          * client just connect
          */
@@ -76,7 +76,7 @@ public class AionConnection extends AConnection {
 
         private final int _id;
 
-        private State(int id) {
+        State(int id) {
             _id = id;
         }
 

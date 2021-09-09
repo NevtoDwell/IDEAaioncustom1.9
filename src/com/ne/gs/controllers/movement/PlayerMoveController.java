@@ -60,6 +60,12 @@ public class PlayerMoveController extends PlayableMoveController<Player> {
         beginZ = z;
     }
 
+    @Override
+    public void moveToDestination()
+    {
+        super.moveToDestination();
+    }
+
     public void updateFalling(float newZ) {
         if (lastFallZ != 0) {
             fallDistance += lastFallZ - newZ;

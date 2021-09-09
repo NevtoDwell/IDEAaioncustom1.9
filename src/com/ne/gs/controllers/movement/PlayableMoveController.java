@@ -47,9 +47,9 @@ public abstract class PlayableMoveController<T extends Creature> extends Creatur
         updateLastMove();
         if (owner.canPerformMove()) {
             if (isControlled() && started.compareAndSet(false, true)) {
-                movementMask = -32;
+                this.movementMask = MovementMask.NPC_STARTMOVE;
                 sendForcedMovePacket();
-                PlayerMoveTaskManager.addPlayer(owner);
+                PlayerMoveTaskManager.getInstance().addPlayer(owner);
             }
         }
     }
@@ -77,10 +77,13 @@ public abstract class PlayableMoveController<T extends Creature> extends Creatur
             sendForcedMovePacket();
         }
 
+        float x = owner.getX();
+        float y = owner.getY();
+        float z = owner.getZ();
 
         float currentSpeed = StatFunctions.getMovementModifier(owner, StatEnum.SPEED, owner.getGameStats().getMovementSpeedFloat());
         float futureDistPassed = currentSpeed * (System.currentTimeMillis() - lastMoveUpdate) / 1000f;
-        float dist = (float) MathUtil.getDistance(owner.getX(), owner.getY(), owner.getZ(), targetDestX, targetDestY, targetDestZ);
+        float dist = (float) MathUtil.getDistance(x, y, z, targetDestX, targetDestY, targetDestZ);
 
         if (dist == 0) {
             return;
@@ -91,9 +94,9 @@ public abstract class PlayableMoveController<T extends Creature> extends Creatur
         }
 
         float distFraction = futureDistPassed / dist;
-        float newX = (targetDestX - owner.getX()) * distFraction + owner.getX();
-        float newY = (targetDestY - owner.getY()) * distFraction + owner.getY();
-        float newZ = (targetDestZ - owner.getZ()) * distFraction + owner.getZ();
+        float newX = (targetDestX - x) * distFraction + x;
+        float newY = (targetDestY - y) * distFraction + y;
+        float newZ = (targetDestZ - z) * distFraction + z;
 
 		/*
          * if ((movementMask & MovementMask.MOUSE) == 0) { targetDestX = newX + vectorX; targetDestY = newY + vectorY; targetDestZ = newZ + vectorZ; }
@@ -106,7 +109,7 @@ public abstract class PlayableMoveController<T extends Creature> extends Creatur
     @Override
     public void abortMove() {
         started.set(false);
-        PlayerMoveTaskManager.removePlayer(owner);
+        PlayerMoveTaskManager.getInstance().removePlayer(owner);
         targetDestX = 0;
         targetDestY = 0;
         targetDestZ = 0;
@@ -118,9 +121,9 @@ public abstract class PlayableMoveController<T extends Creature> extends Creatur
         if (targetDestX != x || targetDestY != y || targetDestZ != z) {
             sendMovePacket = true;
         }
-        targetDestX = x;
-        targetDestY = y;
-        targetDestZ = z;
+        this.targetDestX = x;
+        this.targetDestY = y;
+        this.targetDestZ = z;
 
         float h = MathUtil.calculateAngleFrom(owner.getX(), owner.getY(), targetDestX, targetDestY);
         if (h != 0) {

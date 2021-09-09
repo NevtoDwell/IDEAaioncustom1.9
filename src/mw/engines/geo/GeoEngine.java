@@ -345,6 +345,7 @@ public class GeoEngine {
 
     /**
      * Calculates collisions of ray from center of source object to selected coordinates
+     * Вычисляет луч столкновения от центра исходного объекта до выбранных координат
      *
      * @param object       Source object
      * @param x            Target x
@@ -501,42 +502,43 @@ public class GeoEngine {
      */
     public static Vector3f getAvailablePoint(Creature creature, float vectorX, float vectorY, byte intentions) {
 
-        float x = creature.getMoveController().beginX();
-        float y = creature.getMoveController().beginY();
+        float x = creature.getMoveController().beginX(); //расстояние моего игрока где я нахожусь!
+        float y = creature.getMoveController().beginY(); //расстояние моего игрока где я нахожусь!
 
-        float targetX = x + vectorX;
-        float targetY = y + vectorY;
+        float targetX = x + vectorX; //расстояние моего игрока до цели!
+        float targetY = y + vectorY; //расстояние моего игрока до цели!
 
-        Vector2f tg = new Vector2f(targetX, targetY);
-        Vector2f sg = new Vector2f(creature.getMoveController().beginX(), creature.getMoveController().beginY());
+        Vector2f tg = new Vector2f(targetX, targetY); //создаётся 2д пространственный вектор x & y до таргета!
+        Vector2f sg = new Vector2f(creature.getMoveController().beginX(), creature.getMoveController().beginY()); //создаётся 2д пространственный вектор x & y моего игрока!
 
         CollisionResults result = getCollisions(creature,
                 targetX,
                 targetY,
                 intentions,
                 Selector.ALL
-        );
+        ); //CollisionResults проверяет столкновения цели с геодатой!
+        //Вычисляет луч столкновения от центра исходного объекта до выбранных координат
 
-        Vector3f target = new Vector3f(targetX, targetY, creature.getMoveController().beginZ() + creature.getObjectTemplate().getBoundRadius().getUpper() / 2f);
-
-        //if (result.size() == 0) {
-        //target = new Vector3f(targetX, targetY, creature.getMoveController().beginZ() + creature.getObjectTemplate().getBoundRadius().getUpper() /2f);
-        //} else {
+        Vector3f target = new Vector3f(targetX, targetY, creature.getMoveController().beginZ() +
+                creature.getObjectTemplate().getBoundRadius().getUpper() / 2f);
+        //создаётся 3д пространственный вектор x, y, z!
 
         if (result.size() > 0 && result.getClosestCollision().getContactPoint().distance(new Vector3f(x, y, creature.getMoveController().beginZ())) < tg.distance(sg) + 3f) {
-
+            //если есть столкновения с геодатой и дистанция 3д направления меньше вектора 2д направления!
             Vector3f origin = result.getClosestCollision().getContactPoint();
             Vector3f efPos = new Vector3f(
                     creature.getMoveController().beginX(),
                     creature.getMoveController().beginY(),
                     creature.getMoveController().beginZ());
 
-            Vector3f dic = GeomUtil.getDirection3D(origin, efPos);
+            Vector3f dic = GeomUtil.getDirection3D(origin, efPos); // создаём общий вектор двух точек от любого элемента геодаты до игрока!
 
             target = GeomUtil.getNextPoint3D(
                     origin,
                     dic,
                     creature.getObjectTemplate().getBoundRadius().getCollision());
+            //getNextPoint3D - вычисляет точку, перемещенную от источника по направлению источника до целевого расстояния.
+            //простыми словами расстояние от origin до dic
         }
 
         //}

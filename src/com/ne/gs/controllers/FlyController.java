@@ -51,7 +51,7 @@ public class FlyController {
     public void onStopGliding(boolean removeWings) {
         if (player.isInState(CreatureState.GLIDING)) {
             player.unsetState(CreatureState.GLIDING);
-
+            PacketSendUtility.broadcastPacket(player, new SM_EMOTION(player, EmotionType.STOP_GLIDE, 0, 0), true);
             
             if (player.isInState(CreatureState.FLYING)) {
                 player.setFlyState(1);

@@ -55,7 +55,7 @@ public enum AbnormalState {
 
     private final int id;
 
-    private AbnormalState(int id) {
+    AbnormalState(int id) {
         this.id = id;
     }
 

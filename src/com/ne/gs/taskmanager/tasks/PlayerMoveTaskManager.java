@@ -17,26 +17,36 @@ import com.ne.gs.taskmanager.AbstractPeriodicTaskManager;
 /**
  * @author ATracer
  */
-public final class PlayerMoveTaskManager {
+public class PlayerMoveTaskManager extends AbstractPeriodicTaskManager {
 
-    private static final ConcurrentMap<Integer, Creature> _moving = new ConcurrentHashMap<>(16, 0.75f, 8);
+    private final ConcurrentHashMap<Integer, Creature> movingPlayers = new ConcurrentHashMap<>();
 
-    static {
-        new AbstractPeriodicTaskManager(200) {
-            @Override
-            public void run() {
-                for (Creature c : _moving.values()) {
-                    c.getMoveController().moveToDestination();
-                }
-            }
-        };
+    private PlayerMoveTaskManager() {
+        super(200);
     }
 
-    public static void addPlayer(Creature player) {
-        _moving.put(player.getObjectId(), player);
+    public void addPlayer(Creature player) {
+        movingPlayers.put(player.getObjectId(), player);
     }
 
-    public static void removePlayer(Creature player) {
-        _moving.remove(player.getObjectId());
+    public void removePlayer(Creature player) {
+        movingPlayers.remove(player.getObjectId());
+    }
+
+    @Override
+    public void run() {
+        for (ConcurrentHashMap.Entry<Integer, Creature> e : movingPlayers.entrySet()) {
+            Creature player = e.getValue();
+            player.getMoveController().moveToDestination();
+        }
+    }
+
+    public static final PlayerMoveTaskManager getInstance() {
+        return SingletonHolder.INSTANCE;
+    }
+
+    private static final class SingletonHolder {
+
+        private static final PlayerMoveTaskManager INSTANCE = new PlayerMoveTaskManager();
     }
 }

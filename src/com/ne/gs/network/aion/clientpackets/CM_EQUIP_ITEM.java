@@ -18,6 +18,7 @@ import com.ne.gs.network.aion.AionClientPacket;
 import com.ne.gs.network.aion.serverpackets.SM_SYSTEM_MESSAGE;
 import com.ne.gs.network.aion.serverpackets.SM_UPDATE_PLAYER_APPEARANCE;
 import com.ne.gs.restrictions.RestrictionsManager;
+import com.ne.gs.skillengine.effect.AbnormalState;
 import com.ne.gs.utils.PacketSendUtility;
 
 /**
@@ -58,31 +59,29 @@ public class CM_EQUIP_ITEM extends AionClientPacket {
                 return;
         }
 
-        if (activePlayer.isInState(CreatureState.GLIDING)) {
-            activePlayer.sendPck(SM_SYSTEM_MESSAGE.STR_CANT_EQUIP_ITEM_IN_ACTION);
+        if (activePlayer.isInState(CreatureState.GLIDING) ||
+                activePlayer.isInPlayerMode(PlayerMode.RIDE)||
+                activePlayer.getEffectController().isAbnormalSet(AbnormalState.SLEEP) ||
+                activePlayer.getEffectController().isAbnormalSet(AbnormalState.FEAR) ||
+                activePlayer.getEffectController().isAbnormalSet(AbnormalState.STUN) ||
+                activePlayer.getEffectController().isAbnormalSet(AbnormalState.STAGGER)||
+                activePlayer.getEffectController().isAbnormalSet(AbnormalState.STUMBLE)||
+                activePlayer.getEffectController().isAbnormalSet(AbnormalState.SPIN)||
+                activePlayer.getEffectController().isAbnormalSet(AbnormalState.PARALYZE)||
+                activePlayer.getEffectController().isAbnormalSet(AbnormalState.OPENAERIAL))
+        {
+            PacketSendUtility.sendPck(activePlayer, SM_SYSTEM_MESSAGE.STR_CANT_EQUIP_ITEM_IN_ACTION);
             return;
         }
 
         switch (action) {
-            case 0:
-                if (activePlayer.isInPlayerMode(PlayerMode.RIDE)) {
-                PacketSendUtility.sendPck(activePlayer, SM_SYSTEM_MESSAGE.STR_CANT_EQUIP_ITEM_IN_ACTION);
-                return;
-                }
+            case 0: //equip //одеть
                 resultItem = equipment.equipItem(itemUniqueId, slotRead);
                 break;
-            case 1:
-                if (activePlayer.isInPlayerMode(PlayerMode.RIDE)) {
-                PacketSendUtility.sendPck(activePlayer, SM_SYSTEM_MESSAGE.STR_CANT_EQUIP_ITEM_IN_ACTION);
-                return;
-                }
+            case 1: //unequip //снять
                 resultItem = equipment.unEquipItem(itemUniqueId, slotRead);
                 break;
-            case 2:
-                if (activePlayer.getController().hasTask(TaskId.ITEM_USE) && !activePlayer.getController().getTask(TaskId.ITEM_USE).isDone() || activePlayer.isInPlayerMode(PlayerMode.RIDE)) {
-                PacketSendUtility.sendPck(activePlayer, SM_SYSTEM_MESSAGE.STR_CANT_EQUIP_ITEM_IN_ACTION);
-                return;
-                }
+            case 2: //смена рук
                 equipment.switchHands();
                 break;
         }

@@ -12,7 +12,6 @@ import com.ne.gs.model.TaskId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ne.gs.configs.administration.AdminConfig;
 import com.ne.gs.model.EmotionType;
 import com.ne.gs.model.actions.PlayerMode;
 import com.ne.gs.model.gameobjects.player.Player;
@@ -104,6 +103,12 @@ public class CM_EMOTION extends AionClientPacket {
         if (player.getLifeStats().isAlreadyDead()) {
             return;
         }
+
+        if (player.getEffectController().isUnderFear()) {
+            player.sendPck(SM_SYSTEM_MESSAGE.STR_SKILL_CAN_NOT_ATTACK_WHILE_IN_ABNORMAL_STATE);
+            return;
+        }
+
         if (player.getState() == CreatureState.PRIVATE_SHOP.getId() || player.isAttackMode()
             && (emotionType == EmotionType.CHAIR_SIT || emotionType == EmotionType.JUMP)) {
             return;
@@ -120,7 +125,7 @@ public class CM_EMOTION extends AionClientPacket {
             EmotionType.ATTACKMODE2)) {
             player.getController().stopStance();
         }
-        
+
         if (emotionType == EmotionType.JUMP) {
             player.getMoveController().updateLastJump();
         }
@@ -147,7 +152,7 @@ public class CM_EMOTION extends AionClientPacket {
             case LAND_FLYTELEPORT:
                 player.getController().onFlyTeleportEnd();
                 break;
-            case FLY:         
+            case FLY:
                 if (!player.isInsideZoneType(ZoneType.FLY)) {
                     player.sendPck(SM_SYSTEM_MESSAGE.STR_FLYING_FORBIDDEN_HERE);
                     return;

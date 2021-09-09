@@ -486,7 +486,7 @@ public class PlayerController extends CreatureController<Player> {
 
     @Override
     public void onStopMove() {
-        PlayerMoveTaskManager.removePlayer(getOwner());
+        PlayerMoveTaskManager.getInstance().removePlayer(getOwner());
         getOwner().getObserveController().notifyMoveObservers();
         getOwner().getMoveController().setInMove(false);
         cancelCurrentSkill();
@@ -497,7 +497,7 @@ public class PlayerController extends CreatureController<Player> {
     @Override
     public void onStartMove() {
         getOwner().getMoveController().setInMove(true);
-        PlayerMoveTaskManager.addPlayer(getOwner());
+        PlayerMoveTaskManager.getInstance().addPlayer(getOwner());
         cancelUseItem();
         cancelCurrentSkill();
         super.onStartMove();

@@ -19,17 +19,13 @@ import javax.xml.bind.annotation.XmlEnum;
 public enum PlayerClass {
     WARRIOR(0, true),
     GLADIATOR(1),
-    // fighter
     TEMPLAR(2),
-    // knight
     SCOUT(3, true),
     ASSASSIN(4),
     RANGER(5),
     MAGE(6, true),
     SORCERER(7),
-    // wizard
     SPIRIT_MASTER(8),
-    // elementalist
     PRIEST(9, true),
     CLERIC(10),
     CHANTER(11),
@@ -38,23 +34,23 @@ public enum PlayerClass {
     /**
      * This id is used on client side
      */
-    private byte classId;
+    private final byte classId;
 
     /**
      * This is the mask for this class id, used with bitwise AND in arguments that contain more than one possible class
      */
-    private int idMask;
+    private final int idMask;
 
     /**
      * Tells whether player can create new character with this class
      */
-    private boolean startingClass;
+    private final boolean startingClass;
 
-    private PlayerClass(int classId) {
+    PlayerClass(int classId) {
         this(classId, false);
     }
 
-    private PlayerClass(int classId, boolean startingClass) {
+    PlayerClass(int classId, boolean startingClass) {
         this.classId = (byte) classId;
         this.startingClass = startingClass;
         idMask = (int) Math.pow(2, classId);
