@@ -55,32 +55,24 @@ public class RootEffect extends EffectTemplate {
     @Override
     public void startEffect(final Effect effect) {
         final Creature effected = effect.getEffected();
-        //Creature effector = effect.getEffector();
         effected.getMoveController().abortMove();
         effected.getEffectController().setAbnormal(AbnormalState.ROOT.getId());
         effect.setAbnormal(AbnormalState.ROOT.getId());
 
-        ThreadPoolManager.getInstance().schedule(new Runnable() {
-            @Override
-            public void run() {                              
-                if(effected.isInState(CreatureState.GLIDING)){
-                   PacketSendUtility.broadcastPacket((Player) effected, new SM_EMOTION(effected, EmotionType.STOP_GLIDE, 1, 0), true);
-                }
+        ThreadPoolManager.getInstance().schedule(() -> {
+            if(effected.isInState(CreatureState.GLIDING)){
+               PacketSendUtility.broadcastPacket((Player) effected, new SM_EMOTION(effected, EmotionType.STOP_GLIDE, 1, 0), true);
             }
-        }, 500);  
+        }, 500);
         
         PacketSendUtility.broadcastPacketAndReceive(effected, new SM_TARGET_IMMOBILIZE(effected));
             
         ActionObserver observer = new ActionObserver(ObserverType.ATTACKED) {
             @Override
             public void attacked(Creature creature) {
-                
-                   // if(!effector.getEffectController().isAbnormalSet(AbnormalState.BLIND)){
-                     //   effected.getEffectController().removeEffect(effect.getSkillId());
-                    //}
-                if (Rnd.get(0, 100) > resistchance) {
+                if (!Rnd.chance(resistchance)) {
                     effected.getEffectController().removeEffect(effect.getSkillId());
-                }            
+                }
             }
         };
         effected.getObserveController().addObserver(observer);
