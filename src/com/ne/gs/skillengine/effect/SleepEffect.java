@@ -49,16 +49,13 @@ public class SleepEffect extends EffectTemplate {
     public void startEffect(final Effect effect) {
         final Creature effected = effect.getEffected();
         effected.getController().cancelCurrentSkill();       
-        effect.setAbnormal(AbnormalState.SLEEP.getId());  
-        
-        ThreadPoolManager.getInstance().schedule(new Runnable() {
-            @Override
-            public void run() {                              
-                if(effected.isInState(CreatureState.GLIDING)){
-                   PacketSendUtility.broadcastPacket((Player) effected, new SM_EMOTION(effected, EmotionType.STOP_GLIDE, 1, 0), true);
-                }
+        effect.setAbnormal(AbnormalState.SLEEP.getId());
+
+        ThreadPoolManager.getInstance().schedule(() -> {
+            if(effected.isInState(CreatureState.GLIDING)){
+                ((Player) effected).getFlyController().onStopGliding(true);
             }
-        }, 500);    
+        }, 500);
         
         effected.getEffectController().setAbnormal(AbnormalState.SLEEP.getId());
 		if (effected.getEffectController().hasAbnormalEffect(572)) {
